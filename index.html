@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wie heiß wird der Boden?</title>
+<meta name="description" content="Die Energiebilanz der Oberfläche zum Ausprobieren: Albedo, Material, Sonne und Wetter entscheiden, wie stark sich eine Fläche aufheizt.">
+<link rel="stylesheet" href="theme/theme.css">
+<!-- Gestaltung (Schrift, Farben, Logo, Farbthemen der Stufen) kommt aus theme/ – siehe theme/README.md.
+     Dieses CSS ist nur Layout und nutzt ausschließlich Variablen aus theme/theme.css. -->
+<style>
+:root{
+  --gutter:clamp(16px,4vw,48px);
+  --head-h:88px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-weight:var(--fw-regular);font-size:17px;line-height:1.45;overflow-x:hidden}
+h1,h2,h3,p{margin:0}
+a{color:inherit}
+button,select{font:inherit;color:inherit}
+b,strong{font-weight:var(--fw-medium)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* ---------- Kopf ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;padding:20px var(--gutter) 16px;border-bottom:2px solid var(--ink);background:var(--paper);position:sticky;top:0;z-index:20;--logo-size:42px}
+.nav{display:flex;flex-wrap:wrap;gap:6px}
+.nav a{display:inline-flex;align-items:center;min-height:40px;padding:6px 12px;border:2px solid var(--ink);text-decoration:none;font-weight:var(--fw-medium);font-size:14px;letter-spacing:.04em;text-transform:uppercase;background:var(--paper)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+.nav a:hover{background:var(--c-yellow-pastel)}
+.nav a[aria-current="page"]:hover{background:var(--ink)}
+.nav .num{font-weight:var(--fw-light);margin-right:6px}
+
+/* ---------- Plakat-Kopf mit drei Gestaltungsebenen ---------- */
+.poster{position:relative;overflow:hidden;min-height:340px;padding:44px var(--gutter) 52px;isolation:isolate}
+.poster .f{position:absolute;z-index:-3}
+.poster .f1{inset:0;background:var(--f1)}
+.poster .f2{top:0;right:0;width:30%;height:58%;background:var(--f2)}
+.poster .f3{bottom:0;right:0;width:30%;height:42%;background:var(--f3)}
+.poster .l2{color:var(--l2);position:absolute;z-index:-2;right:calc(30% - 70px);top:calc(58% - 70px);width:140px;height:140px}
+.poster .l3{color:var(--l3);position:absolute;z-index:-1;right:-14%;top:-36%;width:min(70vw,760px);height:auto;pointer-events:none}
+.poster-text{position:relative;max-width:min(64%,860px)}
+.kicker{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.headline{font-weight:var(--fw-light);text-transform:uppercase;font-size:clamp(44px,8.6vw,124px);line-height:.86;letter-spacing:-.005em;margin-bottom:22px;overflow-wrap:anywhere}
+.lead{font-size:clamp(17px,1.8vw,21px);max-width:40em}
+.chain{list-style:none;display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:22px 0 0;font-weight:var(--fw-medium);font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+.chain li{padding:6px 10px;border:2px solid var(--ink);background:var(--paper)}
+.chain li.on{background:var(--ink);color:var(--paper)}
+.chain li.arrow{border:0;background:none;padding:6px 0}
+
+/* ---------- Stufen ---------- */
+.stage{display:none;scroll-margin-top:var(--head-h)}
+.stage.active{display:block}
+/* Handy: Flächen, Simulation, Bedienung, Konto und Aufgaben untereinander.
+   Desktop: Simulation links, Flächen, Bedienung und Aufgaben rechts daneben. */
+.stage-body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"view" "pre" "ctrl" "side";gap:16px 32px;padding:24px var(--gutter) 48px;align-items:start}
+.sim-pre{grid-area:pre;min-width:0;display:flex;flex-direction:column;gap:16px}
+.sim-view{grid-area:view;min-width:0}
+.sim-ctrl{grid-area:ctrl;min-width:0;display:flex;flex-direction:column;gap:16px}
+.sim-ctrl:empty{display:none}
+.side{grid-area:side;display:flex;flex-direction:column;gap:16px;min-width:0}
+.sim-frame{border:2px solid var(--ink);background:var(--paper)}
+.sim-frame canvas{display:block;width:100%;touch-action:manipulation}
+.sim-frame canvas.scene{cursor:pointer}
+.sim-frame canvas.graph{border-top:2px solid var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:8px 14px;border:2px solid var(--ink);background:var(--paper);font-weight:var(--fw-medium);font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;text-decoration:none}
+.btn:hover{background:var(--accent-pale)}
+.btn.primary{background:var(--accent)}
+.btn.primary:hover{background:var(--accent-pale)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:38px;padding:4px 10px;font-size:12.5px}
+.seg{display:flex;flex-wrap:wrap}
+.seg .btn{margin-right:-2px}
+.range{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-height:46px}
+.range label{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.range input{flex:1;min-width:0;accent-color:var(--ink);height:32px}
+.clock{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.04em;min-width:5.5em;text-align:right;font-variant-numeric:tabular-nums}
+
+.card{border:2px solid var(--ink);padding:16px;background:var(--paper)}
+.card h3{font-weight:var(--fw-medium);font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.card p{font-size:16px}
+.small{font-size:14.5px;line-height:1.4}
+.muted{color:var(--ink-muted)}
+
+/* Flächen-Auswahl */
+.colrow{border-top:2px solid var(--ink);padding:12px 0 4px}
+.colrow:first-of-type{border-top:0;padding-top:0}
+.colhead{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0;border:0;background:none;cursor:pointer;text-align:left}
+.colhead .tag{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;color:var(--ink-inverse);font-weight:var(--fw-medium);font-size:15px;flex:none}
+.colhead .colname{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.04em;text-transform:uppercase;flex:1}
+.colhead .coltemp{font-weight:var(--fw-light);font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.colrow.sel .colhead .colname{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.coledit{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}
+.coledit p{flex:1 1 100%}
+.swatches{display:flex;flex-wrap:wrap;gap:6px}
+.sw{width:40px;height:40px;border:2px solid var(--ink);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:3px}
+select.mat{min-height:44px;padding:6px 10px;border:2px solid var(--ink);border-radius:0;background:var(--paper);font-weight:var(--fw-medium);font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.ctrl-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.ctrl-row:first-of-type{margin-top:0}
+.ctrl-row .range{flex-basis:100%}
+.ctrl-row .val{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.03em;flex:1 1 100%}
+.saved{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-direction:column;gap:6px}
+.saved li{display:flex;align-items:center;gap:10px;font-size:14.5px}
+.saved .key{width:28px;height:0;border-top:4px dashed var(--ink);flex:none}
+
+/* Energiekonto */
+.konto{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(60px,1fr) auto;gap:6px 10px;align-items:center;font-size:14.5px}
+.konto .lbl{line-height:1.2}
+.konto .bar{height:14px;border:2px solid var(--ink);position:relative}
+.konto .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--f,var(--ink))}
+.konto .num{font-weight:var(--fw-medium);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.konto .sum{font-weight:var(--fw-medium)}
+.konto .sep{grid-column:1/-1;border-top:2px solid var(--ink);margin-top:4px;padding-top:6px;font-weight:var(--fw-medium);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase}
+
+/* Aufgaben und Erkenntnis */
+.task{background:var(--accent-pale)}
+.task ul{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:8px}
+.task li{display:grid;grid-template-columns:26px 1fr;gap:8px;font-size:16px;align-items:start}
+.task li .box{width:22px;height:22px;border:2px solid var(--ink);background:var(--paper);margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:var(--fw-medium)}
+.task li.done .box{background:var(--ink);color:var(--paper)}
+.insight p{font-size:19px;line-height:1.35}
+.insight.unlocked{background:var(--ink);color:var(--paper)}
+.insight.unlocked h3::after{content:" – freigeschaltet"}
+
+/* Legende der Energieflüsse */
+.legend{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 16px;font-size:14.5px}
+.legend li{display:flex;align-items:center;gap:8px;line-height:1.2}
+.legend svg{flex:none;width:22px;height:26px}
+
+/* ---------- Startseite ---------- */
+.intro{padding:32px var(--gutter) 12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+.step{padding:0 18px 24px 0}
+.step .n{font-weight:var(--fw-light);font-size:48px;line-height:1}
+.step h3{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:6px 0}
+.step p{font-size:16px}
+.bilanz{margin:0 var(--gutter) 32px;padding:20px;border:2px solid var(--ink);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px 32px;align-items:center}
+.bilanz .eq{font-weight:var(--fw-light);font-size:clamp(22px,2.6vw,34px);line-height:1.1;text-transform:uppercase}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:2px solid var(--ink)}
+.tile{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:24px;min-height:300px;padding:24px var(--gutter) 24px 24px;text-decoration:none;color:var(--ink);border-right:2px solid var(--ink);isolation:isolate;background:var(--tile)}
+.tile:first-child{padding-left:var(--gutter)}
+.tile:last-child{border-right:0}
+.tile .t-kicker{font-weight:var(--fw-medium);font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.tile .t-title{font-weight:var(--fw-light);font-size:clamp(30px,3.2vw,46px);line-height:.9;text-transform:uppercase}
+.tile p{font-size:16px}
+.tile .go{font-weight:var(--fw-medium);font-size:14px;letter-spacing:.06em;text-transform:uppercase;border-top:2px solid var(--ink);padding-top:10px}
+.tile svg{position:absolute;z-index:-1;pointer-events:none}
+.tile:hover .go{text-decoration:underline}
+
+/* ---------- Fuß ---------- */
+.foot{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;padding:36px var(--gutter);background:var(--foot-bg);color:var(--foot-ink)}
+.foot .claim{font-weight:var(--fw-light);font-size:clamp(28px,4vw,54px);line-height:.92;text-transform:uppercase}
+.foot .info{font-weight:var(--fw-medium);font-size:13px;letter-spacing:.05em;text-transform:uppercase;line-height:1.6}
+
+/* ---------- Responsiv ---------- */
+@media (max-width:1100px){
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tile{border-bottom:2px solid var(--ink);padding-left:var(--gutter)}
+  .tile:nth-child(2n){border-right:0}
+}
+@media (min-width:1000px){
+  .stage:not(#start) .poster{min-height:0;padding:22px var(--gutter) 24px}
+  .stage:not(#start) .headline{font-size:clamp(40px,4.2vw,64px);margin-bottom:12px}
+  .stage:not(#start) .kicker{margin-bottom:10px}
+  .stage:not(#start) .lead{font-size:18px}
+  .stage:not(#start) .poster .l3{top:-60%;width:min(44vw,560px)}
+  .stage-body{
+    grid-template-columns:minmax(0,1.75fr) minmax(320px,1fr);
+    grid-template-areas:"view pre" "view ctrl" "view side";
+    grid-template-rows:auto auto 1fr;
+  }
+  .sim-view{position:sticky;top:calc(var(--head-h) + 16px)}
+}
+@media (max-width:900px){
+  .intro{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bilanz{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .top{position:static;padding-top:16px;--logo-size:34px}
+  .nav{width:100%}
+  .nav a{flex:1 1 auto;justify-content:center;font-size:13px;padding:6px 8px}
+  .poster{min-height:0;padding:28px var(--gutter) 108px}
+  .poster-text{max-width:100%}
+  .poster .f2{top:auto;bottom:0;left:0;right:auto;width:58%;height:78px}
+  .poster .f3{bottom:0;right:0;width:42%;height:78px}
+  .poster .l2{right:auto;left:calc(58% - 46px);top:auto;bottom:32px;width:92px;height:92px}
+  .poster .l3{width:150vw;right:-70%;top:-20%}
+  .btn{flex:1 1 auto}
+  .seg{width:100%}
+  .seg .btn{flex:1 1 0;padding:8px 6px;font-size:13px}
+  .intro,.tiles{grid-template-columns:minmax(0,1fr)}
+  .tile{border-right:0;min-height:220px}
+  .foot{grid-template-columns:minmax(0,1fr)}
+  .konto{font-size:13.5px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="#start" data-brand="logo"></a>
+  <nav class="nav" aria-label="Stufen">
+    <a href="#start" data-route="start">Start</a>
+    <a href="#albedo" data-route="albedo"><span class="num">1</span>Albedo</a>
+    <a href="#material" data-route="material"><span class="num">2</span>Material</a>
+    <a href="#wetter" data-route="wetter"><span class="num">3</span>Sonne &amp; Wetter</a>
+    <a href="#tag" data-route="tag"><span class="num">4</span>Ein Tag</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- ================= START ================= -->
+<section class="stage" id="start" data-stage="start">
+  <div class="poster">
+    <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+    <svg class="l2" viewBox="0 0 100 100" aria-hidden="true"><path d="M0 50 A50 50 0 0 1 100 50 Z" fill="currentColor"/><path d="M0 100 A50 50 0 0 1 100 100 Z" fill="currentColor"/></svg>
+    <svg class="l3" viewBox="0 0 400 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3"><circle cx="200" cy="200" r="90" vector-effect="non-scaling-stroke"/><path d="M200 20 V80 M200 320 V380 M20 200 H80 M320 200 H380 M73 73 L115 115 M285 285 L327 327 M327 73 L285 115 M115 285 L73 327" vector-effect="non-scaling-stroke"/></svg>
+    <div class="poster-text">
+      <p class="kicker">Die Energiebilanz der Oberfläche</p>
+      <h1 class="headline">Wie heiß<br>wird der<br>Boden?</h1>
+      <p class="lead">Im Sommer verbrennt man sich auf dem Asphalt die Füße, der Rasen daneben bleibt angenehm und das Wasser im Freibad ist erfrischend kühl. Dabei scheint auf alle dieselbe Sonne. Finde heraus, warum.</p>
+      <ol class="chain" aria-label="Der Weg der Energie">
+        <li class="on">Sonne</li><li class="arrow" aria-hidden="true">→</li>
+        <li class="on">Albedo</li><li class="arrow" aria-hidden="true">→</li>
+        <li class="on">Wärme</li><li class="arrow" aria-hidden="true">→</li>
+        <li class="on">Abgeben</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="intro">
+    <div class="step"><div class="n">1</div><h3>Sonne</h3><p>Die Sonne schickt Energie als Licht. Mittags im Sommer sind das bei uns bis zu 900 Watt auf jeden Quadratmeter.</p></div>
+    <div class="step"><div class="n">2</div><h3>Albedo</h3><p>Ein Teil des Lichts wird zurückgeworfen. Helle Flächen werfen viel zurück, dunkle fast nichts.</p></div>
+    <div class="step"><div class="n">3</div><h3>Wärme</h3><p>Der Rest wird geschluckt und wird zu Wärme. Die Oberfläche heizt sich auf.</p></div>
+    <div class="step"><div class="n">4</div><h3>Abgeben</h3><p>Die Fläche gibt Wärme wieder ab: als Wärmestrahlung, an die Luft, durch Verdunstung und in den Boden darunter.</p></div>
+  </div>
+
+  <div class="bilanz">
+    <p class="eq">Was geschluckt wird, muss wieder weg – sonst wird die Fläche immer heißer.</p>
+    <ul class="legend" aria-label="Die Pfeile in den Versuchen" data-legend></ul>
+  </div>
+
+  <div class="tiles">
+    <a class="tile" href="#albedo">
+      <svg viewBox="0 0 100 100" style="color:var(--tile-shape);right:-30px;top:-30px;width:170px" aria-hidden="true"><circle cx="50" cy="50" r="22" fill="currentColor"/><path d="M50 4 L54 40 L96 50 L54 60 L50 96 L46 60 L4 50 L46 40 Z" fill="none" style="stroke:var(--c-lilac)" stroke-width="1.2"/></svg>
+      <div><div class="t-kicker">Stufe 1 – Albedo</div><div class="t-title">Hell oder<br>dunkel?</div></div>
+      <p>Mal drei Platten in verschiedenen Farben an und leg sie in die Sonne.</p>
+      <div class="go">Los geht’s →</div>
+    </a>
+    <a class="tile" href="#material">
+      <svg viewBox="0 0 100 100" style="color:var(--tile-shape);right:-50px;bottom:-50px;width:210px" aria-hidden="true"><path d="M50 8 C50 8 22 44 22 62 a28 28 0 0 0 56 0 C78 44 50 8 50 8 Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      <div><div class="t-kicker">Stufe 2 – Material</div><div class="t-title">Stein, Sand<br>oder Wasser?</div></div>
+      <p>Wärmekapazität, Wärmeleitung und Feuchtigkeit: Was hält eine Fläche kühl?</p>
+      <div class="go">Los geht’s →</div>
+    </a>
+    <a class="tile" href="#wetter">
+      <svg viewBox="0 0 100 100" style="color:var(--tile-shape);right:-50px;bottom:-60px;width:230px" aria-hidden="true"><path d="M30 70 a22 22 0 0 1 4 -43 a26 26 0 0 1 48 8 a18 18 0 0 1 -2 35 Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      <div><div class="t-kicker">Stufe 3 – Sonne &amp; Wetter</div><div class="t-title">Sonne, Wolken,<br>Wind</div></div>
+      <p>Einstrahlwinkel, Bewölkung und Wind: Stell das Wetter ein.</p>
+      <div class="go">Los geht’s →</div>
+    </a>
+    <a class="tile" href="#tag">
+      <svg viewBox="0 0 100 100" style="color:var(--tile-shape);right:-20px;bottom:-30px;width:160px" aria-hidden="true"><path d="M0 100 A50 50 0 0 1 100 100 Z" fill="currentColor"/></svg>
+      <div><div class="t-kicker">Stufe 4 – Alles zusammen</div><div class="t-title">Ein ganzer<br>Tag</div></div>
+      <p>Tag und Nacht, Sommer und Winter: Wie sich drei Flächen über 24 Stunden verhalten.</p>
+      <div class="go">Los geht’s →</div>
+    </a>
+  </div>
+</section>
+
+<!-- ================= STUFE 1: ALBEDO ================= -->
+<section class="stage" id="albedo" data-stage="albedo">
+  <div class="poster">
+    <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+    <svg class="l2" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="currentColor"/></svg>
+    <svg class="l3" viewBox="0 0 400 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3"><path d="M200 20 L222 178 L380 200 L222 222 L200 380 L178 222 L20 200 L178 178 Z" vector-effect="non-scaling-stroke"/></svg>
+    <div class="poster-text">
+      <p class="kicker">Stufe 1 – Albedo</p>
+      <h2 class="headline">Hell oder dunkel?</h2>
+      <p class="lead">Drei gleiche Betonplatten liegen in der Mittagssonne. Nur ihre Farbe ist verschieden. Mal sie an und lass die Sonne scheinen.</p>
+    </div>
+  </div>
+  <div class="lab" data-lab="albedo"></div>
+</section>
+
+<!-- ================= STUFE 2: MATERIAL ================= -->
+<section class="stage" id="material" data-stage="material">
+  <div class="poster">
+    <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+    <svg class="l2" viewBox="0 0 100 100" aria-hidden="true"><path d="M0 50 A50 50 0 0 1 100 50 Z" fill="currentColor"/><path d="M0 100 A50 50 0 0 1 100 100 Z" fill="currentColor"/></svg>
+    <svg class="l3" viewBox="0 0 400 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3"><path d="M140 40 C140 40 60 150 60 200 a80 80 0 0 0 160 0 C220 150 140 40 140 40 Z" vector-effect="non-scaling-stroke"/><path d="M290 130 C290 130 230 210 230 250 a60 60 0 0 0 120 0 C350 210 290 130 290 130 Z" vector-effect="non-scaling-stroke"/></svg>
+    <div class="poster-text">
+      <p class="kicker">Stufe 2 – Material</p>
+      <h2 class="headline">Stein, Sand oder Wasser?</h2>
+      <p class="lead">Wie viel Wärme ein Material speichern kann, wie gut es sie in die Tiefe leitet und ob es feucht ist, entscheidet, wie heiß seine Oberfläche wird.</p>
+    </div>
+  </div>
+  <div class="lab" data-lab="material"></div>
+</section>
+
+<!-- ================= STUFE 3: SONNE & WETTER ================= -->
+<section class="stage" id="wetter" data-stage="wetter">
+  <div class="poster">
+    <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+    <svg class="l2" viewBox="0 0 100 100" aria-hidden="true"><path d="M0 100 A50 50 0 0 1 100 100 Z" fill="currentColor"/></svg>
+    <svg class="l3" viewBox="0 0 400 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3"><path d="M110 280 a70 70 0 0 1 14 -138 a84 84 0 0 1 156 26 a58 58 0 0 1 -6 112 Z" vector-effect="non-scaling-stroke"/><circle cx="150" cy="330" r="6" vector-effect="non-scaling-stroke"/><circle cx="210" cy="350" r="6" vector-effect="non-scaling-stroke"/><circle cx="270" cy="330" r="6" vector-effect="non-scaling-stroke"/></svg>
+    <div class="poster-text">
+      <p class="kicker">Stufe 3 – Sonne &amp; Wetter</p>
+      <h2 class="headline">Sonne, Wolken, Wind</h2>
+      <p class="lead">Steht die Sonne hoch oder flach? Ziehen Wolken auf? Weht Wind? Probier aus, was die Fläche heiß macht – und was sie kühlt.</p>
+    </div>
+  </div>
+  <div class="lab" data-lab="wetter"></div>
+</section>
+
+<!-- ================= STUFE 4: EIN TAG ================= -->
+<section class="stage" id="tag" data-stage="tag">
+  <div class="poster">
+    <div class="f f1"></div><div class="f f2"></div><div class="f f3"></div>
+    <svg class="l2" viewBox="0 0 100 100" aria-hidden="true"><path d="M0 50 A50 50 0 0 1 100 50 Z" fill="currentColor"/></svg>
+    <svg class="l3" viewBox="0 0 400 400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 300 A180 180 0 0 1 380 300" vector-effect="non-scaling-stroke"/><circle cx="200" cy="120" r="34" vector-effect="non-scaling-stroke"/></svg>
+    <div class="poster-text">
+      <p class="kicker">Stufe 4 – Alles zusammen</p>
+      <h2 class="headline">Ein ganzer Tag</h2>
+      <p class="lead">Morgens geht die Sonne auf, nachts ist sie weg. Verfolge, wie sich drei Flächen über 24 Stunden erwärmen und wieder abkühlen.</p>
+    </div>
+  </div>
+  <div class="lab" data-lab="tag"></div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <p class="claim" data-brand="claim"></p>
+  <p class="info" data-brand="contact"></p>
+</footer>
+
+<script src="theme/theme.js"></script>
+<script src="js/brand.js"></script>
+<script src="js/model.js"></script>
+<script>
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const TH = THEME.seb, FONT = THEME.font, M = SEB.MATERIALS;
+const HOUR = 3600, LETTERS = ['A', 'B', 'C'];
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Hilfsfunktionen ----------
+function el(tag, attrs, html) {
+  const e = document.createElement(tag);
+  if (attrs) for (const k in attrs) { if (k === 'class') e.className = attrs[k]; else e.setAttribute(k, attrs[k]); }
+  if (html != null) e.innerHTML = html;
+  return e;
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function hex(c) { const n = parseInt(c.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function mix(a, b, t) { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+function tempColor(T) {
+  const s = TH.temp;
+  if (T <= s[0][0]) return s[0][1];
+  for (let i = 1; i < s.length; i++) if (T <= s[i][0]) return mix(s[i - 1][1], s[i][1], (T - s[i - 1][0]) / (s[i][0] - s[i - 1][0]));
+  return s[s.length - 1][1];
+}
+const fmtT = T => Math.round(T).toString().replace('-', '−') + ' °C';
+const fmtW = v => Math.round(Math.abs(v)).toLocaleString('de-DE') + ' W/m²';
+function feel(T, water) {
+  if (T < (water ? 0.5 : 0)) return water ? 'Eis möglich' : 'Frost';
+  if (water) return T < 20 ? 'frisch' : T < 26 ? 'angenehm' : 'warm';
+  if (T < 15) return 'kühl';
+  if (T < 30) return 'angenehm';
+  if (T < 40) return 'warm';
+  if (T < 50) return 'heiß';
+  return 'Autsch! Zu heiß für Füße';
+}
+const OKTA = ['wolkenlos', 'heiter', 'heiter', 'leicht bewölkt', 'wolkig', 'wolkig', 'stark bewölkt', 'stark bewölkt', 'bedeckt'];
+function beaufort(u) {
+  const lim = [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9], names = ['Windstille', 'leiser Zug', 'leichte Brise', 'schwache Brise', 'mäßige Brise', 'frische Brise', 'starker Wind', 'steifer Wind'];
+  let b = 0; while (b < lim.length && u >= lim[b]) b++;
+  return 'Windstärke ' + b + ' – ' + names[b];
+}
+function wetLabel(c) { return M[c.mat].wMax === Infinity ? '' : ' · ' + c.wet; }
+
+// Die sechs Energieflüsse: Schlüssel, Name, Richtung
+const FLUX = [
+  { k: 'sw', name: 'Sonnenlicht kommt an', dir: 'down' },
+  { k: 'ref', name: 'wird zurückgeworfen', dir: 'up' },
+  { k: 'lw', name: 'Wärmestrahlung', dir: 'up' },
+  { k: 'h', name: 'Wärme an die Luft', dir: 'up' },
+  { k: 'le', name: 'Verdunstung', dir: 'up' },
+  { k: 'g', name: 'Wärme in den Boden', dir: 'down' }
+];
+function legendIcon(k, dir) {
+  const c = TH.flux[k];
+  const d = dir === 'down' ? 'M8 2 H14 V16 H19 L11 24 L3 16 H8 Z' : 'M8 24 H14 V10 H19 L11 2 L3 10 H8 Z';
+  return `<svg viewBox="0 0 22 26" aria-hidden="true"><path d="${d}" fill="${c}" stroke="#000" stroke-width="1.5"/></svg>`;
+}
+$$('[data-legend]').forEach(ul => { ul.innerHTML = FLUX.map(f => `<li>${legendIcon(f.k, f.dir)}${f.name}</li>`).join(''); });
+
+// ---------- Die vier Versuche ----------
+const FIXED_SUN = { elev: 60, cloud: 0, wind: 2, Ta: 25, rh: 0.5 };
+const SEASONS = {
+  fruehling: { name: 'Frühling', decl: 0, Tm: 10, amp: 5 },
+  sommer: { name: 'Sommer', decl: 23.44, Tm: 20, amp: 6 },
+  winter: { name: 'Winter', decl: -23.44, Tm: 2, amp: 3 }
+};
+const paintOf = c => TH.paints[c.paint];
+const revealed = (lab, fn) => { const r = lab.res; let n = 0; for (let i = 0; i < r.t.length && r.t[i] <= lab.cursor + 1e-6; i++) n = i + 1; return fn(n); };
+const maxRevealed = lab => revealed(lab, n => Math.max(-99, ...lab.res.cols.flatMap(c => c.Ts.slice(0, n))));
+const minRevealed = lab => revealed(lab, n => Math.min(99, ...lab.res.cols.flatMap(c => c.Ts.slice(0, n))));
+const atEnd = lab => lab.cursor >= lab.cfg.duration - 1;
+const endTs = lab => lab.res.cols.map(c => c.Ts[c.Ts.length - 1]);
+
+const LABS = {
+  albedo: {
+    editor: 'paint', duration: 3 * HOUR, sample: 300, dt: 30, Tinit: 22, Tdeep: 15, play: 9,
+    cols: [{ mat: 'beton', paint: 2 }, { mat: 'beton', paint: 3 }, { mat: 'beton', paint: 4 }],
+    note: 'Alle Platten sind aus Beton und liegen gleich lange in der Sonne. Sonne 60° hoch, wolkenlos, leichter Wind, Luft 25 °C.',
+    weather: () => () => FIXED_SUN,
+    tasks: [
+      { text: 'Bring eine Platte über 45 °C.', check: lab => maxRevealed(lab) >= 45 },
+      { text: 'Halte eine Platte nach drei Stunden unter 30 °C.', check: lab => atEnd(lab) && Math.min(...endTs(lab)) < 30 },
+      { text: 'Finde zwei Farben, die nach drei Stunden mehr als 15 Grad auseinanderliegen.', check: lab => atEnd(lab) && Math.max(...endTs(lab)) - Math.min(...endTs(lab)) > 15 }
+    ],
+    insight: 'Dunkle Flächen schlucken fast das ganze Sonnenlicht und werden heiß. Helle Flächen werfen viel davon zurück. Diesen Anteil nennt man <b>Albedo</b>. Rot oder Grün ist dabei egal – es zählt, wie hell eine Farbe ist. Deshalb tragen wir im Sommer helle Kleidung, und manche Städte streichen Dächer weiß.'
+  },
+  material: {
+    editor: 'material', equalOption: true, duration: 3 * HOUR, sample: 300, dt: 30, Tinit: 22, Tdeep: 15, play: 9,
+    cols: [{ mat: 'asphalt', wet: 'trocken' }, { mat: 'beton', wet: 'trocken' }, { mat: 'erde', wet: 'feucht' }],
+    note: 'Sonne 60° hoch, wolkenlos, leichter Wind, Luft 25 °C. Im Boden siehst du, wie tief die Wärme eindringt.',
+    weather: () => () => FIXED_SUN,
+    tasks: [
+      { text: 'Leg Asphalt und Wasser nebeneinander in die Sonne.', check: lab => lab.cursor >= HOUR && lab.cols.some(c => c.mat === 'asphalt') && lab.cols.some(c => c.mat === 'wasser') },
+      { text: 'Mach eine Fläche nass und schau, wie lange sie kühl bleibt.', check: lab => atEnd(lab) && lab.cols.some(c => c.mat !== 'wasser' && c.wet === 'nass') },
+      { text: 'Finde ein trockenes Material, das über 45 °C heiß wird – obwohl alle gleich hell sind.', check: lab => lab.equal && revealed(lab, n => lab.cols.some((c, i) => c.mat !== 'wasser' && c.wet === 'trocken' && Math.max(...lab.res.cols[i].Ts.slice(0, n)) >= 45)) }
+    ],
+    insight: 'Wasser und Beton können viel Wärme <b>speichern</b> und <b>leiten</b> sie in die Tiefe – ihre Oberfläche bleibt kühler. Holz und trockener Sand halten die Wärme oben fest und werden an der Oberfläche heiß. Feuchtigkeit kühlt zusätzlich: Beim <b>Verdunsten</b> nimmt das Wasser viel Wärme mit – bis es aufgebraucht ist.'
+  },
+  wetter: {
+    editor: 'material', duration: 3 * HOUR, sample: 300, dt: 30, Tinit: 22, Tdeep: 15, play: 9, single: true, saveCurves: true,
+    cols: [{ mat: 'asphalt', wet: 'trocken' }],
+    controls: { elev: 40, cloud: 0, wind: 2 },
+    note: 'Die Luft hat immer 25 °C. Mit „Kurve merken“ kannst du verschiedene Wetterlagen vergleichen.',
+    weather: w => () => ({ elev: w.elev, cloud: w.cloud / 8, wind: w.wind, Ta: 25, rh: 0.5 }),
+    tasks: [
+      { text: 'Stell die Sonne so hoch wie mittags im Sommer in Offenbach (63°).', check: lab => Math.abs(lab.w.elev - 63) <= 3 },
+      { text: 'Merk dir eine Kurve mit wolkenlosem Himmel und eine mit 8/8 Bewölkung.', check: lab => lab.saved.some(s => s.w.cloud === 0) && lab.saved.some(s => s.w.cloud === 8) },
+      { text: 'Merk dir eine Kurve bei Windstille und eine bei starkem Wind (ab 10 m/s).', check: lab => lab.saved.some(s => s.w.wind === 0) && lab.saved.some(s => s.w.wind >= 10) }
+    ],
+    insight: 'Steht die Sonne <b>flach</b>, verteilt sich ihr Licht auf eine viel größere Fläche – jeder Quadratmeter bekommt weniger ab. Darum ist es im Winter und am Abend kühler. Einzelne Wolken ändern wenig, eine geschlossene <b>Wolkendecke</b> hält das meiste Sonnenlicht ab. Und <b>Wind</b> trägt die Wärme von der Oberfläche fort.'
+  },
+  tag: {
+    editor: 'material', duration: 24 * HOUR, sample: 600, dt: 60, spinup: 2 * 24 * HOUR, play: 24, day: true,
+    cols: [{ mat: 'asphalt', wet: 'trocken' }, { mat: 'rasen', wet: 'feucht' }, { mat: 'wasser', wet: 'nass' }],
+    controls: { season: 'sommer', cloud: 0, wind: 2 },
+    note: 'Ein Tag in Offenbach, Uhrzeit nach dem Sonnenstand (12 Uhr: Sonne am höchsten). Die gestrichelte Linie ist die Lufttemperatur.',
+    weather: w => {
+      const s = SEASONS[w.season], c = w.cloud / 8;
+      return t => { const h = t / HOUR; return { elev: SEB.sunElevation(s.decl, h), cloud: c, wind: w.wind, Ta: s.Tm + s.amp * (1 - 0.6 * c) * Math.cos(2 * Math.PI * (h - 15) / 24), rh: 0.6 }; };
+    },
+    tasks: [
+      { text: 'Lass einen ganzen Tag ablaufen, bis Mitternacht.', check: lab => atEnd(lab) },
+      { text: 'Schau dir eine Nacht mit klarem Himmel und eine mit 8/8 Wolken an. Wann bleibt es wärmer?', check: lab => lab.flags.clearNight && lab.flags.cloudyNight },
+      { text: 'Finde einen Wintertag, an dem eine Fläche unter 0 °C abkühlt.', check: lab => lab.w.season === 'winter' && minRevealed(lab) < 0 }
+    ],
+    onUpdate: lab => {
+      const h = lab.cursor / HOUR, night = h < 4.5 || h > 21.5;
+      if (night && lab.w.cloud === 0) lab.flags.clearNight = true;
+      if (night && lab.w.cloud === 8) lab.flags.cloudyNight = true;
+    },
+    insight: 'Tagsüber schluckt die Oberfläche mehr Energie, als sie abgibt – sie <b>erwärmt</b> sich. Nachts kommt kein Sonnenlicht mehr, sie strahlt nur noch Wärme ab und <b>kühlt aus</b>. Wolken wirken dabei wie eine Decke. Wasser schwankt am wenigsten – deshalb ist es am Meer im Sommer kühler und im Winter milder als im Land.'
+  }
+};
+
+// ---------- Ein Versuch ----------
+class Lab {
+  constructor(root, id, cfg) {
+    this.root = root; this.id = id; this.cfg = cfg;
+    this.cols = cfg.cols.map(c => Object.assign({}, c));
+    this.w = Object.assign({}, cfg.controls || {});
+    this.equal = !!cfg.equalOption;
+    this.cursor = 0; this.playing = false; this.sel = 0;
+    this.saved = []; this.flags = {}; this.done = cfg.tasks.map(() => false);
+    this.build();
+    this.recompute();
+  }
+
+  // ---- Aufbau der Bedienelemente ----
+  build() {
+    const cfg = this.cfg;
+    const body = el('div', { class: 'stage-body' });
+    body.innerHTML = `
+      <div class="sim-view">
+        <div class="sim-frame">
+          <canvas class="scene" role="img" aria-label="Querschnitt: Himmel, Oberfläche und Boden mit Energiepfeilen"></canvas>
+          <canvas class="graph" role="img" aria-label="Diagramm: Temperatur der Oberfläche über die Zeit"></canvas>
+        </div>
+        <div class="controls">
+          <button class="btn primary play" type="button"></button>
+          <div class="range"><label for="t-${this.id}">${cfg.day ? 'Uhrzeit' : 'Zeit'}</label><input id="t-${this.id}" class="time" type="range" min="0" max="${cfg.duration}" step="60" value="0"><span class="clock"></span></div>
+        </div>
+        <p class="small muted" style="margin-top:8px">${cfg.note}</p>
+      </div>
+      <div class="sim-pre"><div class="card cols-card"><h3>${cfg.single ? 'Die Fläche' : 'Die Flächen'}</h3><div class="rows"></div></div></div>
+      <div class="sim-ctrl"></div>
+      <div class="side">
+        <div class="card konto-card"><h3 class="konto-title"></h3><div class="konto"></div>
+          <p class="small muted" style="margin-top:10px">Watt pro Quadratmeter: so viel Energie fließt jede Sekunde durch einen Quadratmeter. 1000 W/m² sind so viel wie zehn alte 100-Watt-Glühbirnen auf einem Quadratmeter.</p></div>
+        <div class="card task"><h3>Aufgaben</h3><ul></ul></div>
+        <div class="card insight"><h3>Erkenntnis</h3><p></p></div>
+      </div>`;
+    this.root.appendChild(body);
+    this.scene = $('canvas.scene', body); this.graph = $('canvas.graph', body);
+    this.playBtn = $('.play', body); this.timeIn = $('.time', body); this.clock = $('.clock', body);
+    this.konto = $('.konto', body); this.kontoTitle = $('.konto-title', body);
+    this.insightCard = $('.insight', body);
+
+    this.playBtn.addEventListener('click', () => this.togglePlay());
+    this.timeIn.addEventListener('input', () => { this.pause(); this.cursor = +this.timeIn.value; this.update(); });
+    this.scene.addEventListener('click', e => {
+      const r = this.scene.getBoundingClientRect(), x = e.clientX - r.left;
+      const g = this.geom; if (!g) return;
+      const i = g.cols.findIndex(c => x >= c.x0 - g.gap / 2 && x <= c.x0 + c.cw + g.gap / 2);
+      if (i >= 0) this.select(i);
+    });
+
+    // Flächen
+    const rows = $('.rows', body);
+    if (cfg.equalOption) {
+      const b = el('button', { class: 'btn small eq', type: 'button', 'aria-pressed': String(this.equal) }, 'Alle gleich hell (Albedo 30 %)');
+      b.style.marginBottom = '12px';
+      b.addEventListener('click', () => { this.equal = !this.equal; b.setAttribute('aria-pressed', String(this.equal)); this.recompute(); });
+      rows.before(b);
+      this.eqHint = el('p', { class: 'small muted' }); this.eqHint.style.marginBottom = '12px';
+      rows.before(this.eqHint);
+    }
+    this.rowEls = this.cols.map((c, i) => {
+      const row = el('div', { class: 'colrow' });
+      row.innerHTML = `<button class="colhead" type="button"><span class="tag" style="background:${TH.lines[i]}">${LETTERS[i]}</span><span class="colname"></span><span class="coltemp"></span></button><div class="coledit"></div>`;
+      if (cfg.single) $('.tag', row).remove();
+      $('.colhead', row).addEventListener('click', () => this.select(i));
+      const ed = $('.coledit', row);
+      if (cfg.editor === 'paint') {
+        const sw = el('div', { class: 'swatches', role: 'group', 'aria-label': 'Farbe für Platte ' + LETTERS[i] });
+        TH.paints.forEach((p, k) => {
+          const b = el('button', { class: 'sw', type: 'button', title: p.name, 'aria-label': `${p.name} (Albedo ${Math.round(p.albedo * 100)} %)` });
+          b.style.background = p.color;
+          b.addEventListener('click', () => { c.paint = k; this.select(i, true); this.recompute(); });
+          sw.appendChild(b);
+        });
+        ed.appendChild(sw);
+      } else {
+        const s = el('select', { class: 'mat', 'aria-label': 'Material' + (cfg.single ? '' : ' für Fläche ' + LETTERS[i]) });
+        for (const k in M) s.appendChild(el('option', { value: k }, M[k].name));
+        s.addEventListener('change', () => { c.mat = s.value; c.wet = M[c.mat].wet; this.select(i, true); this.recompute(); });
+        ed.appendChild(s);
+        const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Feuchtigkeit' });
+        ['trocken', 'feucht', 'nass'].forEach(wv => {
+          const b = el('button', { class: 'btn small', type: 'button', 'data-wet': wv }, wv);
+          b.addEventListener('click', () => { c.wet = wv; this.select(i, true); this.recompute(); });
+          seg.appendChild(b);
+        });
+        ed.appendChild(seg);
+      }
+      ed.appendChild(el('p', { class: 'small desc' }));
+      rows.appendChild(row);
+      return row;
+    });
+
+    // Wetter
+    const ctrl = $('.sim-ctrl', body);
+    if (cfg.controls) {
+      const card = el('div', { class: 'card' }, '<h3>Das Wetter</h3>');
+      if ('elev' in this.w) {
+        card.appendChild(this.slider('elev', 'Sonnenhöhe', 5, 90, 1, v => v + '° über dem Horizont'));
+        const pre = el('div', { class: 'ctrl-row seg' });
+        [['Winter, mittags', 17], ['Frühling, mittags', 40], ['Sommer, mittags', 63]].forEach(([n, v]) => {
+          const b = el('button', { class: 'btn small', type: 'button' }, n + ' ' + v + '°');
+          b.addEventListener('click', () => this.setW('elev', v));
+          pre.appendChild(b);
+        });
+        card.appendChild(pre);
+        card.appendChild(el('p', { class: 'small muted', style: 'margin-top:6px' }, 'Mittagssonne in Offenbach am 21. Dezember, 21. März und 21. Juni.'));
+      }
+      if ('season' in this.w) {
+        const seg = el('div', { class: 'ctrl-row seg', role: 'group', 'aria-label': 'Jahreszeit' });
+        for (const k in SEASONS) {
+          const b = el('button', { class: 'btn small', type: 'button', 'data-season': k }, SEASONS[k].name);
+          b.addEventListener('click', () => this.setW('season', k));
+          seg.appendChild(b);
+        }
+        card.appendChild(seg);
+      }
+      card.appendChild(this.slider('cloud', 'Bewölkung', 0, 8, 1, v => v + '/8 – ' + OKTA[v]));
+      card.appendChild(this.slider('wind', 'Wind', 0, 12, 1, v => v + ' m/s – ' + beaufort(v)));
+      ctrl.appendChild(card);
+    }
+    if (cfg.saveCurves) {
+      const card = el('div', { class: 'card' }, '<h3>Kurven vergleichen</h3>');
+      const row = el('div', { class: 'controls', style: 'margin-top:0' });
+      const save = el('button', { class: 'btn', type: 'button' }, 'Kurve merken');
+      const clear = el('button', { class: 'btn', type: 'button' }, 'Alle löschen');
+      save.addEventListener('click', () => this.saveCurve());
+      clear.addEventListener('click', () => { this.saved = []; this.renderSaved(); this.update(); });
+      row.append(save, clear);
+      this.savedList = el('ul', { class: 'saved' });
+      card.append(row, this.savedList, el('p', { class: 'small muted', style: 'margin-top:8px' }, 'Bis zu drei Kurven bleiben im Diagramm stehen.'));
+      ctrl.appendChild(card);
+      this.renderSaved();
+    }
+
+    // Aufgaben
+    const ul = $('.task ul', body);
+    this.taskEls = cfg.tasks.map(t => { const li = el('li', null, `<span class="box"></span><span>${t.text}</span>`); ul.appendChild(li); return li; });
+
+    new ResizeObserver(() => this.resize()).observe(this.scene);
+  }
+
+  slider(key, label, min, max, step, fmt) {
+    const id = `${this.id}-${key}`;
+    const wrap = el('div', { class: 'ctrl-row' });
+    wrap.innerHTML = `<div class="range"><label for="${id}">${label}</label><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${this.w[key]}"></div><span class="val"></span>`;
+    const inp = $('input', wrap), val = $('.val', wrap);
+    const show = () => { val.textContent = fmt(this.w[key]); inp.value = this.w[key]; };
+    inp.addEventListener('input', () => this.setW(key, +inp.value));
+    (this.wUpdaters = this.wUpdaters || []).push(show);
+    show();
+    return wrap;
+  }
+  setW(key, v) { this.w[key] = v; this.wUpdaters.forEach(f => f()); this.recompute(); }
+
+  select(i, quiet) { this.sel = i; if (!quiet) this.update(); }
+
+  // ---- Rechnen ----
+  colAlbedo(c) {
+    if (this.cfg.editor === 'paint') return paintOf(c).albedo;
+    return this.equal ? 0.3 : M[c.mat].albedo;
+  }
+  recompute() {
+    const cfg = this.cfg;
+    const season = this.w.season && SEASONS[this.w.season];
+    this.res = SEB.simulate({
+      cols: this.cols.map(c => ({ mat: c.mat, wet: c.wet, albedo: this.colAlbedo(c) })),
+      weather: cfg.weather(this.w), duration: cfg.duration, sample: cfg.sample, dt: cfg.dt,
+      Tinit: season ? season.Tm : cfg.Tinit, Tdeep: season ? season.Tm : cfg.Tdeep, spinup: cfg.spinup
+    });
+    this.yRange = null;
+    this.update();
+  }
+  // Zustand zur Zeit t (linear zwischen den gespeicherten Zeitpunkten)
+  sampleAt(t) {
+    const r = this.res, k = clamp(t / this.cfg.sample, 0, r.t.length - 1);
+    const i = Math.min(Math.floor(k), r.t.length - 2), a = k - i;
+    const L = (x, y) => x + (y - x) * a;
+    const lerpObj = (p, q) => { const o = {}; for (const key in p) o[key] = typeof p[key] === 'number' ? L(p[key], q[key]) : p[key]; return o; };
+    return {
+      weather: lerpObj(r.weather[i], r.weather[i + 1]),
+      cols: r.cols.map(c => ({
+        Ts: L(c.Ts[i], c.Ts[i + 1]), flux: lerpObj(c.flux[i], c.flux[i + 1]),
+        profile: c.profile[i].map((v, j) => L(v, c.profile[i + 1][j])), W: L(c.W[i], c.W[i + 1]),
+        mat: c.mat, water: c.water, albedo: c.albedo
+      }))
+    };
+  }
+
+  // ---- Abspielen ----
+  togglePlay() { if (this.playing) this.pause(); else { if (atEnd(this)) this.cursor = 0; this.playing = true; this.lastT = null; this.update(); } }
+  pause() { if (this.playing) { this.playing = false; this.updateButtons(); } }
+  tick(now) {
+    if (this.playing) {
+      if (this.lastT != null) {
+        this.cursor += (now - this.lastT) / 1000 * this.cfg.duration / this.cfg.play;
+        if (this.cursor >= this.cfg.duration) { this.cursor = this.cfg.duration; this.playing = false; }
+        this.update();
+      }
+      this.lastT = now;
+    } else if (!reduceMotion) this.drawScene();   // Wolken und Wind ziehen weiter
+  }
+  updateButtons() {
+    const start = this.cfg.day ? 'Tag starten' : 'Sonne an';
+    this.playBtn.textContent = this.playing ? '❚❚ Pause' : (atEnd(this) ? '↺ Noch einmal' : (this.cursor > 0 ? '▶ Weiter' : '▶ ' + start));
+  }
+
+  // ---- Anzeige ----
+  update() {
+    const s = this.cur = this.sampleAt(this.cursor);
+    this.timeIn.value = Math.round(this.cursor);
+    if (this.cfg.day) {
+      const m = Math.round(this.cursor / 60), h = Math.floor(m / 60) % 25, mm = m % 60;
+      this.clock.textContent = String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ' Uhr';
+    } else {
+      const m = Math.round(this.cursor / 60);
+      this.clock.textContent = Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min';
+    }
+    this.updateButtons();
+    // Flächen-Zeilen
+    this.cols.forEach((c, i) => {
+      const row = this.rowEls[i], mat = M[c.mat], sc = s.cols[i];
+      row.classList.toggle('sel', i === this.sel && !this.cfg.single);
+      const name = this.cfg.editor === 'paint' ? 'Platte ' + LETTERS[i] + ' · ' + paintOf(c).name : (this.cfg.single ? '' : LETTERS[i] + ' · ') + mat.name;
+      $('.colname', row).textContent = name;
+      $('.coltemp', row).textContent = fmtT(sc.Ts);
+      const desc = $('.desc', row);
+      if (this.cfg.editor === 'paint') {
+        const a = Math.round(paintOf(c).albedo * 100);
+        desc.textContent = `Albedo ${a} %: wirft ${a} % des Sonnenlichts zurück, schluckt ${100 - a} %.`;
+        $$('.sw', row).forEach((b, k) => b.setAttribute('aria-pressed', String(k === c.paint)));
+      } else {
+        $('select', row).value = c.mat;
+        $$('[data-wet]', row).forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.wet === c.wet)); b.disabled = mat.wMax === Infinity && b.dataset.wet !== 'nass'; });
+        let water = '';
+        if (mat.wMax !== Infinity && c.wet !== 'trocken') water = sc.W > 0.005 ? ` Wasser übrig: ${sc.W.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm.` : ' Das Wasser ist verdunstet.';
+        desc.textContent = mat.text + water;
+      }
+    });
+    if (this.eqHint) this.eqHint.textContent = this.equal
+      ? 'Alle Flächen werfen gleich viel Sonnenlicht zurück. So siehst du nur, was das Material ausmacht.'
+      : 'Jede Fläche hat ihre echte Helligkeit: Asphalt und Wasser sind dunkel, Sand und Beton hell.';
+    if (this.wUpdaters && this.w.season) $$('[data-season]', this.root).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.season === this.w.season)));
+    this.drawScene(); this.drawGraph(); this.drawKonto();
+    if (this.cfg.onUpdate) this.cfg.onUpdate(this);
+    this.checkTasks();
+  }
+
+  checkTasks() {
+    this.cfg.tasks.forEach((t, i) => { if (!this.done[i] && t.check(this)) this.done[i] = true; this.taskEls[i].classList.toggle('done', this.done[i]); $('.box', this.taskEls[i]).textContent = this.done[i] ? '✓' : ''; });
+    const all = this.done.every(Boolean);
+    this.insightCard.classList.toggle('unlocked', all);
+    $('p', this.insightCard).innerHTML = all ? this.cfg.insight : 'Löse alle Aufgaben – dann erscheint hier, was du herausgefunden hast.';
+  }
+
+  drawKonto() {
+    const c = this.cur.cols[this.sel], f = c.flux, i = this.sel;
+    const name = this.cfg.editor === 'paint' ? 'Platte ' + LETTERS[i] : (this.cfg.single ? '' : LETTERS[i] + ' · ') + c.mat.name;
+    this.kontoTitle.textContent = 'Energiekonto' + (name ? ' – ' + name : '');
+    const row = (k, label, v, cls) => {
+      const w = clamp(Math.abs(v) / 1000, 0, 1) * 100;
+      return `<span class="lbl ${cls || ''}">${label}</span><span class="bar"><i style="width:${w}%;--f:${k ? TH.flux[k] : 'var(--ink)'}"></i></span><span class="num">${fmtW(v)}</span>`;
+    };
+    const abs = f.sw - f.ref;
+    let h = row('sw', 'Sonnenlicht kommt an', f.sw) + row('ref', 'wird zurückgeworfen', f.ref) + row(null, 'wird geschluckt', abs, 'sum');
+    h += '<span class="sep">Die Fläche gibt ab</span>';
+    h += row('lw', f.lw >= 0 ? 'Wärmestrahlung' : 'Wärmestrahlung vom Himmel', f.lw);
+    h += row('h', f.h >= 0 ? 'Wärme an die Luft' : 'Luft wärmt die Fläche', f.h);
+    h += row('le', 'Verdunstung', f.le);
+    h += row('g', f.g >= 0 ? 'Wärme in den Boden' : 'Boden gibt Wärme zurück', f.g);
+    this.konto.innerHTML = h;
+  }
+
+  resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = this.scene.clientWidth; if (!w) return;
+    const sh = Math.round(w * (w < 560 ? 0.82 : 0.56)), gh = Math.round(Math.max(170, w * (w < 560 ? 0.5 : 0.3)));
+    for (const [c, h] of [[this.scene, sh], [this.graph, gh]]) {
+      c.style.height = h + 'px'; c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+      c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    this.sw = w; this.sh = sh; this.gh = gh;
+    this.drawScene(); this.drawGraph();
+  }
+
+  // ---- Szene: Himmel, Pfeile, Boden ----
+  drawScene() {
+    if (!this.sw || !this.cur) return;
+    const ctx = this.scene.getContext('2d'), W = this.sw, H = this.sh, s = this.cur, wx = s.weather;
+    const fs = clamp(W * 0.018, 11, 15), now = performance.now() / 1000;
+    const yS = Math.round(H * 0.6), surfH = Math.max(7, Math.round(H * 0.028)), zMax = 0.3;
+    const padL = W < 560 ? 34 : 46, padR = W < 560 ? 26 : 40, n = s.cols.length, gap = n > 1 ? 12 : 0;
+    const cw = (W - padL - padR - gap * (n - 1)) / n;
+    const night = clamp((2 - wx.elev) / 8, 0, 1), cloud = wx.cloud;
+    const daySky = mix(TH.sky, TH.skyCloudy, cloud), sky = mix(daySky, TH.skyNight, night);
+    const ink = night > 0.5 ? '#FFFFFF' : TH.ink;
+    this.geom = { gap, cols: s.cols.map((_, i) => ({ x0: padL + i * (cw + gap), cw })) };
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, yS);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, yS, W, H - yS);
+    // Sterne
+    if (night > 0.3) {
+      ctx.fillStyle = TH.star; ctx.globalAlpha = (night - 0.3) / 0.7 * (1 - cloud * 0.9);
+      for (let k = 0; k < 40; k++) ctx.fillRect(((k * 0.618) % 1) * W, ((k * 61) % 100) / 100 * yS * 0.9, 2, 2);
+      ctx.globalAlpha = 1;
+    }
+    // Sonne: Lichtrichtung d (vormittags von links, nachmittags von rechts)
+    const e = wx.elev, er = e * Math.PI / 180;
+    const sgn = this.cfg.day && this.cursor > 12 * HOUR ? -1 : 1;
+    const d = { x: sgn * Math.cos(er), y: Math.sin(er) };
+    const yTop = yS * 0.34;
+    // Wolken (Linienillustration, gefüllt, damit sie die Sonne verdecken)
+    const nCl = Math.round(cloud * 8);
+    for (let k = 0; k < nCl; k++) {
+      const speed = 6 + wx.wind * 4, span = W + 160;
+      const x = ((k * 211 + 40 + (reduceMotion ? 0 : now * speed)) % span) - 80, y = yS * (0.1 + ((k * 37) % 5) * 0.07);
+      this.cloudShape(ctx, x, y, fs * (2.4 + (k % 3) * 0.5));
+    }
+    // Wind: Linien, die über den Himmel ziehen
+    if (wx.wind > 0.5) {
+      ctx.strokeStyle = night > 0.5 ? 'rgba(255,255,255,.5)' : TH.wind; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      const nL = Math.round(wx.wind * 1.2), len = 20 + wx.wind * 5;
+      for (let k = 0; k < nL; k++) {
+        const x = ((k * 173 + (reduceMotion ? 0 : now * (30 + wx.wind * 25))) % (W + len)) - len, y = yS * (0.42 + ((k * 29) % 11) / 11 * 0.5);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y); ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+    }
+    // Lichtbündel (nur ein Feld): gleiche Lichtmenge, verteilt auf eine Fläche, die mit flacher Sonne wächst
+    if (this.cfg.single && e > 1) {
+      const c0 = this.geom.cols[0], hx = c0.x0 + c0.cw * 0.55, bw = c0.cw * 0.12;
+      const foot = Math.min(bw / Math.sin(er), c0.cw * 0.8);
+      const topY = fs * 5.6 + fs * 1.3 * 1.9, px = hx - 26 - c0.x0;
+      const L = Math.min((yS - topY) / Math.sin(er), px / Math.max(Math.cos(er), 0.01));
+      ctx.save(); ctx.beginPath(); ctx.rect(c0.x0, 0, c0.cw, yS); ctx.clip();
+      ctx.fillStyle = TH.beam; ctx.strokeStyle = TH.sun; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(hx - foot / 2, yS); ctx.lineTo(hx + foot / 2, yS);
+      ctx.lineTo(hx + foot / 2 - d.x * L, yS - d.y * L); ctx.lineTo(hx - foot / 2 - d.x * L, yS - d.y * L); ctx.closePath();
+      ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
+      ctx.restore();
+    }
+
+    // Spalten
+    s.cols.forEach((c, i) => {
+      const { x0 } = this.geom.cols[i], f = c.flux;
+      const surfColor = this.cfg.editor === 'paint' ? paintOf(this.cols[i]).color : TH.material[this.cols[i].mat];
+      // Boden: Schichten in Temperaturfarben
+      const gy = z => yS + surfH + z / zMax * (H - yS - surfH);
+      for (let j = 0; j < SEB.N && SEB.ZTOP[j] < zMax; j++) {
+        const z0 = SEB.ZTOP[j], z1 = Math.min(z0 + SEB.DZ[j], zMax);
+        ctx.fillStyle = tempColor(c.profile[j]);
+        ctx.fillRect(x0, Math.floor(gy(z0)), cw, Math.ceil(gy(z1) - gy(z0)) + 1);
+      }
+      // Oberfläche
+      ctx.fillStyle = surfColor; ctx.fillRect(x0, yS, cw, surfH);
+      if (c.water) {
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let x = 0; x <= cw; x += 4) ctx.lineTo(x0 + x, yS + surfH / 2 + Math.sin(x / 7 + (reduceMotion ? 0 : now * 2)) * surfH * 0.25);
+        ctx.stroke();
+      } else if (c.W > 0.005) {
+        ctx.fillStyle = TH.flux.le; ctx.fillRect(x0, yS - 3, cw, 4);
+      }
+      ctx.fillStyle = TH.ink; ctx.fillRect(x0, yS - 1, cw, 2);
+
+      // Pfeile
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, cw, H); ctx.clip();
+      const maxW = Math.min(cw * 0.13, 50), sc = v => Math.abs(v) / 1000 * maxW;
+      const hx = x0 + cw * (this.cfg.single ? 0.55 : sgn > 0 ? 0.24 : 0.76);
+      if (f.sw > 3) {
+        const L = this.cfg.single ? Math.min((yS - fs * 8) / Math.sin(er), (hx - x0 - 60) / Math.max(Math.cos(er), 0.01)) : (yS - yTop) / Math.max(Math.sin(er), 0.3);
+        this.arrow(ctx, hx - d.x * L, yS - 3 - d.y * L, hx, yS - 3, sc(f.sw), TH.flux.sw);
+      }
+      if (f.ref > 3) {
+        const L = (yS - yTop) * 0.62 / Math.max(Math.sin(er), 0.3);
+        this.arrow(ctx, hx, yS - 3, hx + d.x * L, yS - 3 - d.y * L, sc(f.ref), TH.flux.ref);
+      }
+      const ups = this.cfg.single ? [0.74, 0.84, 0.94] : (sgn > 0 ? [0.55, 0.71, 0.87] : [0.45, 0.29, 0.13]);
+      const Lup = (yS - yTop) * 0.6;
+      ['lw', 'h', 'le'].forEach((k, m) => {
+        const v = f[k], x = x0 + cw * ups[m];
+        if (Math.abs(v) < 4) return;
+        if (v > 0) this.arrow(ctx, x, yS - 3, x, yS - 3 - Lup, sc(v), TH.flux[k]);
+        else this.arrow(ctx, x, yS - 3 - Lup, x, yS - 3, sc(v), TH.flux[k]);
+        if (this.cfg.single && W >= 560) {
+          ctx.fillStyle = ink; ctx.font = `500 ${fs * 0.8}px ${FONT}`; ctx.textAlign = 'center';
+          ctx.fillText(['STRAHLUNG', 'LUFT', 'VERDUNSTUNG'][m], x, yS - Lup - 14 - fs * 0.2);
+        }
+      });
+      if (Math.abs(f.g) >= 4) {
+        const gx = x0 + cw * 0.5, Lg = (H - yS) * 0.5, y0 = yS + surfH + 4;
+        if (f.g > 0) this.arrow(ctx, gx, y0, gx, y0 + Lg, sc(f.g), TH.flux.g);
+        else this.arrow(ctx, gx, y0 + Lg, gx, y0, sc(f.g), TH.flux.g);
+      }
+      ctx.restore();
+
+      // Beschriftung: Name, Temperatur, Gefühl
+      ctx.textAlign = 'left'; ctx.fillStyle = ink;
+      const tx = x0 + 6;
+      ctx.font = `500 ${fs * 0.85}px ${FONT}`;
+      const label = this.cfg.editor === 'paint' ? LETTERS[i] + ' · ' + paintOf(this.cols[i]).name : (n > 1 ? LETTERS[i] + ' · ' : '') + c.mat.name;
+      ctx.fillText(label.toUpperCase(), tx, fs * 1.4);
+      ctx.font = `300 ${fs * 2.3}px ${FONT}`;
+      ctx.fillText(fmtT(c.Ts), tx, fs * 1.4 + fs * 2.3);
+      ctx.font = `400 ${fs * 0.85}px ${FONT}`;
+      ctx.fillText(feel(c.Ts, c.water), tx, fs * 1.4 + fs * 2.3 + fs * 1.3);
+      if (n > 1 && i === this.sel) { ctx.strokeStyle = TH.ink; ctx.lineWidth = 3; ctx.strokeRect(x0 + 1.5, 1.5, cw - 3, H - 3); }
+    });
+
+    if (this.cfg.single && e > 1) {
+      const area = 1 / Math.sin(er);
+      ctx.fillStyle = ink; ctx.font = `500 ${fs * 0.85}px ${FONT}`; ctx.textAlign = 'left';
+      const txt = `1 m² SONNENLICHT TRIFFT ${area.toLocaleString('de-DE', { maximumFractionDigits: 1 })} m² BODEN`;
+      ctx.fillText(txt, this.geom.cols[0].x0 + 6, fs * 1.4 + fs * 2.3 + fs * 2.8);
+    }
+
+    const drawSun = () => {
+      if (e <= -1) return;
+      // unterhalb der Beschriftung, entlang der Lichtrichtung
+      const r = fs * 1.3, topY = fs * 5.6 + r * 1.9, px = this.cfg.single ? padL + cw * 0.55 : W / 2, maxX = sgn > 0 ? px - 26 : W - 26 - px;
+      const L = Math.min((yS - topY) / Math.max(Math.sin(er), 0.01), maxX / Math.max(Math.cos(er), 0.01));
+      const sx = px - d.x * L, sy = yS - d.y * L;
+      ctx.strokeStyle = TH.sunRay; ctx.lineWidth = 2.5;
+      for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * r * 1.35, sy + Math.sin(a) * r * 1.35); ctx.lineTo(sx + Math.cos(a) * r * 1.9, sy + Math.sin(a) * r * 1.9); ctx.stroke(); }
+      ctx.fillStyle = TH.sun; ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fill();
+    };
+    drawSun();
+
+    // Tiefe links, Farbskala rechts
+    ctx.fillStyle = TH.ink; ctx.font = `400 ${fs * 0.8}px ${FONT}`; ctx.textAlign = 'right';
+    for (let z = 0; z <= 30; z += 10) {
+      const y = yS + surfH + z / 100 / zMax * (H - yS - surfH);
+      ctx.fillText(z === 0 ? '0' : z + ' cm', padL - 6, Math.min(H - 4, y + (z === 0 ? fs * 0.3 : 0) + (z === 30 ? -2 : fs * 0.3)));
+      ctx.fillRect(padL - 4, Math.min(H - 1, y), 3, 1);
+    }
+    const bx = W - padR + 8, bw = 10, by0 = yS + surfH, by1 = H - 6;
+    for (let y = by0; y < by1; y++) { ctx.fillStyle = tempColor(60 - (y - by0) / (by1 - by0) * 65); ctx.fillRect(bx, y, bw, 1); }
+    ctx.strokeStyle = TH.ink; ctx.lineWidth = 1; ctx.strokeRect(bx, by0, bw, by1 - by0);
+    if (padR >= 40) {
+      ctx.fillStyle = TH.ink; ctx.textAlign = 'left'; ctx.font = `400 ${fs * 0.7}px ${FONT}`;
+      [60, 30, 0].forEach(T => ctx.fillText(T + '°', bx + bw + 2, by0 + (60 - T) / 65 * (by1 - by0) + fs * 0.25));
+    }
+  }
+
+  cloudShape(ctx, x, y, r) {
+    ctx.fillStyle = TH.cloud; ctx.strokeStyle = TH.cloudLine; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.55, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.arc(x + r * 0.6, y - r * 0.35, r * 0.65, Math.PI, Math.PI * 1.85);
+    ctx.arc(x + r * 1.3, y, r * 0.55, Math.PI * 1.5, Math.PI * 0.5);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+
+  arrow(ctx, x1, y1, x2, y2, w, fill) {
+    if (w < 1.2) return;
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy); if (len < 4) return;
+    const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+    const hw = Math.max(w * 0.95, w / 2 + 6), hl = Math.min(len * 0.45, Math.max(w * 1.1, 12));
+    const bx = x2 - ux * hl, by = y2 - uy * hl;
+    ctx.beginPath();
+    ctx.moveTo(x1 + nx * w / 2, y1 + ny * w / 2); ctx.lineTo(bx + nx * w / 2, by + ny * w / 2);
+    ctx.lineTo(bx + nx * hw, by + ny * hw); ctx.lineTo(x2, y2); ctx.lineTo(bx - nx * hw, by - ny * hw);
+    ctx.lineTo(bx - nx * w / 2, by - ny * w / 2); ctx.lineTo(x1 - nx * w / 2, y1 - ny * w / 2); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = TH.ink; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // ---- Diagramm ----
+  drawGraph() {
+    if (!this.sw || !this.res) return;
+    const ctx = this.graph.getContext('2d'), W = this.sw, H = this.gh, r = this.res, cfg = this.cfg;
+    const fs = clamp(W * 0.016, 11, 14);
+    const pl = 46, pr = 14, pt = 14, pb = 26, gw = W - pl - pr, gh = H - pt - pb;
+    // y-Bereich aus allen Kurven (auch den noch nicht gezeigten, damit nichts springt)
+    let lo = Infinity, hi = -Infinity;
+    const take = a => a.forEach(v => { lo = Math.min(lo, v); hi = Math.max(hi, v); });
+    r.cols.forEach(c => take(c.Ts)); take(r.weather.map(w => w.Ta)); this.saved.forEach(s => take(s.Ts));
+    lo = Math.floor((lo - 2) / 10) * 10; hi = Math.ceil((hi + 2) / 10) * 10; if (hi - lo < 20) hi = lo + 20;
+    const X = t => pl + t / cfg.duration * gw, Y = T => pt + (hi - T) / (hi - lo) * gh;
+    ctx.clearRect(0, 0, W, H);
+    // Nacht
+    if (cfg.day) {
+      ctx.fillStyle = TH.night;
+      let start = null;
+      r.weather.forEach((w, i) => {
+        const dark = w.elev < 0;
+        if (dark && start == null) start = r.t[i];
+        if ((!dark || i === r.t.length - 1) && start != null) { ctx.fillRect(X(start), pt, X(r.t[i]) - X(start), gh); start = null; }
+      });
+    }
+    // Gitter
+    ctx.font = `400 ${fs * 0.85}px ${FONT}`; ctx.fillStyle = TH.ink; ctx.strokeStyle = TH.grid; ctx.lineWidth = 1;
+    ctx.textAlign = 'right';
+    for (let T = lo; T <= hi; T += 10) { ctx.beginPath(); ctx.moveTo(pl, Y(T)); ctx.lineTo(W - pr, Y(T)); ctx.stroke(); ctx.fillText(String(T).replace('-', '−') + ' °C', pl - 6, Y(T) + fs * 0.3); }
+    ctx.textAlign = 'center';
+    const step = cfg.day ? 3 * HOUR : HOUR / 2;
+    for (let t = 0; t <= cfg.duration; t += step) {
+      ctx.beginPath(); ctx.moveTo(X(t), pt); ctx.lineTo(X(t), pt + gh); ctx.stroke();
+      const h = t / HOUR;
+      const lab = cfg.day ? (h % 6 === 0 ? h + ' Uhr' : '') : (Number.isInteger(h) ? h + ' h' : '');
+      if (lab) ctx.fillText(lab, clamp(X(t), pl + 14, W - pr - 20), H - 8);
+    }
+    ctx.strokeStyle = TH.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pl, pt); ctx.lineTo(pl, pt + gh); ctx.lineTo(W - pr, pt + gh); ctx.stroke();
+
+    const line = (ts, vs, color, width, dash, upto) => {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []); ctx.beginPath();
+      let first = true;
+      for (let i = 0; i < ts.length; i++) {
+        if (upto != null && ts[i] > upto) {
+          if (i > 0) { const a = (upto - ts[i - 1]) / (ts[i] - ts[i - 1]); ctx.lineTo(X(upto), Y(vs[i - 1] + (vs[i] - vs[i - 1]) * a)); }
+          break;
+        }
+        if (first) { ctx.moveTo(X(ts[i]), Y(vs[i])); first = false; } else ctx.lineTo(X(ts[i]), Y(vs[i]));
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+    // gemerkte Kurven
+    this.saved.forEach((s, k) => line(r.t, s.Ts, TH.saved[k], 3, [8, 5]));
+    // Luft
+    line(r.t, r.weather.map(w => w.Ta), TH.air, 1.5, [4, 4], this.cursor);
+    // Flächen
+    const cur = this.cur;
+    r.cols.forEach((c, i) => {
+      const color = cfg.single ? TH.lines[0] : TH.lines[i];
+      line(r.t, c.Ts, color, i === this.sel ? 3.5 : 2.5, null, this.cursor);
+      const x = X(this.cursor), y = Y(cur.cols[i].Ts);
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill();
+      if (!cfg.single) { ctx.font = `500 ${fs}px ${FONT}`; ctx.textAlign = x > W - 40 ? 'right' : 'left'; ctx.fillText(LETTERS[i], x + (x > W - 40 ? -9 : 9), y + fs * 0.35); }
+    });
+    // Zeitmarke
+    ctx.strokeStyle = TH.ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(this.cursor), pt); ctx.lineTo(X(this.cursor), pt + gh); ctx.stroke();
+    // Legende
+    ctx.textAlign = 'left'; ctx.fillStyle = TH.ink; ctx.font = `500 ${fs * 0.8}px ${FONT}`;
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(pl + 10, pt + 10); ctx.lineTo(pl + 34, pt + 10); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillText('LUFT', pl + 40, pt + 10 + fs * 0.3);
+    ctx.fillText(cfg.single ? 'OBERFLÄCHE' : 'OBERFLÄCHEN A, B, C', pl + 84, pt + 10 + fs * 0.3);
+  }
+
+  // ---- Kurven merken (Stufe 3) ----
+  saveCurve() {
+    const c = this.cols[0];
+    const s = { Ts: this.res.cols[0].Ts.slice(), w: Object.assign({}, this.w), label: `${this.w.elev}° · ${this.w.cloud}/8 · ${this.w.wind} m/s · ${M[c.mat].name}${wetLabel(c)}` };
+    this.saved.push(s); if (this.saved.length > 3) this.saved.shift();
+    this.renderSaved(); this.update();
+  }
+  renderSaved() {
+    this.savedList.innerHTML = this.saved.length ? '' : '<li class="muted">Noch keine Kurve gemerkt.</li>';
+    this.saved.forEach((s, k) => {
+      const li = el('li', null, `<span class="key" style="border-color:${TH.saved[k]}"></span><span>${s.label}</span>`);
+      this.savedList.appendChild(li);
+    });
+  }
+}
+
+// ---------- Start ----------
+const labs = {};
+$$('.lab').forEach(root => { const id = root.dataset.lab; labs[id] = new Lab(root, id, LABS[id]); });
+let active = null;
+
+function route() {
+  const id = (location.hash || '#start').slice(1);
+  const target = document.getElementById(id) && document.getElementById(id).classList.contains('stage') ? id : 'start';
+  $$('.stage').forEach(s => s.classList.toggle('active', s.id === target));
+  $$('.nav a').forEach(a => { if (a.dataset.route === target) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  Object.values(labs).forEach(l => l.pause());
+  active = labs[target] || null;
+  if (active) active.resize();
+  const h = $('.top').offsetHeight; document.documentElement.style.setProperty('--head-h', h + 'px');
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+route();
+
+(function loop(now) { if (active) active.tick(now); requestAnimationFrame(loop); })(performance.now());
+</script>
+</body>
+</html>
